@@ -1,0 +1,75 @@
+:root {
+  --bg-dark: #0a0a12;
+  --bg-panel: #11111e;
+  --bg-card: #16162a;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e4e4e7;
+  --text-dim: #9ca3af;
+  --text-muted: #6b7280;
+  --accent: #fbbf24;
+  --accent-dim: rgba(251, 191, 36, 0.15);
+  --easy: #22d3ee;
+  --normal: #fbbf24;
+  --hard: #ef4444;
+  --perfect: #fbbf24;
+  --great: #22d3ee;
+  --good: #a3e635;
+  --miss: #ef4444;
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font: 16px/150% var(--sans);
+  background: var(--bg-dark);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+main {
+  min-height: 100svh;
+}
+
+h1 {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom-width: 3px;
+  font: 700 18px var(--sans);
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
