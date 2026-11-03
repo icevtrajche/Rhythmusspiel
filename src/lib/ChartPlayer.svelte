@@ -75,6 +75,7 @@
       counts: { ...h.counts },
       grade: computeGrade(h.accuracy),
       fullCombo: h.counts.miss === 0,
+      mods: [...mods],
     };
 
     onEnd(results);
