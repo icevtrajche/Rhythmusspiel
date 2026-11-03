@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition';
   import type { SongDefinition, ResultsData } from './types';
   import type { HudData } from './gameEngine';
+  import type { GameplaySettings } from './settings';
   import { KEY_LANES, MAX_SCORE } from './types';
   import { AudioEngine } from './audioEngine';
   import { GameEngine } from './gameEngine';
@@ -11,11 +12,13 @@
   let {
     song,
     difficulty,
+    settings,
     onEnd,
     onQuit,
   }: {
     song: SongDefinition;
     difficulty: keyof SongDefinition['charts'];
+    settings: GameplaySettings;
     onEnd: (results: ResultsData) => void;
     onQuit: () => void;
   } = $props();
@@ -41,7 +44,6 @@
   let started = false;
   const pressedLanes = new Set<number>();
 
-  const SCROLL_SPEED = 600;
   const HIT_LINE_RATIO = 0.82;
   const MAX_LANE_WIDTH = 130;
   const LEAD_IN_MS = 3000;
@@ -86,7 +88,7 @@
     if (lane === undefined) return;
     e.preventDefault();
     if (!started) return;
-    audio.playClick();
+    audio.playClick(settings.clickVolume);
     pressedLanes.add(lane);
     engine.onKeyDown(lane);
   }
@@ -121,7 +123,7 @@
       canvasWidth: cssW,
       canvasHeight: cssH,
       hitLineY,
-      scrollSpeed: SCROLL_SPEED,
+      scrollSpeed: settings.scrollSpeed,
     });
 
     engine = new GameEngine(
@@ -135,6 +137,7 @@
         },
       },
       LEAD_IN_MS,
+      settings.timingOffsetMs,
     );
 
     engine.start();
