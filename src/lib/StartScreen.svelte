@@ -2,7 +2,7 @@
   import { SONGS } from '../lib/songs';
   import type { SongDefinition } from '../lib/types';
   import { LANE_ARROWS, LANE_ARROW_NAMES } from '../lib/types';
-  import { loadSettings, saveSettings, type GameplaySettings } from './settings';
+  import { DEFAULT_SETTINGS, loadSettings, saveSettings, type GameplaySettings } from './settings';
 
   let {
     onPlay,
@@ -79,7 +79,7 @@
           <div class="setting-row"><label for="scroll-speed">Scroll speed <strong>{settings.scrollSpeed}</strong></label><input id="scroll-speed" type="range" min="300" max="1000" step="25" bind:value={settings.scrollSpeed} /></div>
           <div class="setting-row"><label for="timing-offset">Timing offset <strong>{settings.timingOffsetMs} ms</strong></label><input id="timing-offset" type="range" min="-150" max="150" step="5" bind:value={settings.timingOffsetMs} /></div>
           <div class="setting-row"><label for="click-volume">Key sound volume <strong>{Math.round(settings.clickVolume * 100)}%</strong></label><input id="click-volume" type="range" min="0" max="0.5" step="0.01" bind:value={settings.clickVolume} /></div>
-          <button type="button" class="reset-settings" onclick={() => (settings = loadSettings())}>RESET DEFAULTS</button>
+          <button type="button" class="reset-settings" onclick={() => (settings = { ...DEFAULT_SETTINGS, keyBindings: { ...DEFAULT_SETTINGS.keyBindings } })}>RESET DEFAULTS</button>
         </div>
       {/if}
       <div class="hero-foot"><span class="pulse"></span> BUILT FOR THE BEAT</div>
