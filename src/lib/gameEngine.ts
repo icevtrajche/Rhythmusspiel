@@ -49,10 +49,12 @@ export class GameEngine {
   };
   private callbacks: EngineCallbacks;
   private leadInMs: number;
+  private timingOffsetMs: number;
 
-  constructor(chart: Chart, callbacks: EngineCallbacks, leadInMs: number) {
+  constructor(chart: Chart, callbacks: EngineCallbacks, leadInMs: number, timingOffsetMs = 0) {
     this.callbacks = callbacks;
     this.leadInMs = leadInMs;
+    this.timingOffsetMs = timingOffsetMs;
     this.notes = chart.notes
       .slice()
       .sort((a, b) => a.timeMs - b.timeMs)
@@ -64,7 +66,7 @@ export class GameEngine {
   }
 
   getElapsedMs(): number {
-    return performance.now() - this.startTime;
+    return performance.now() - this.startTime + this.timingOffsetMs;
   }
 
   getNotes(): ActiveNote[] {
