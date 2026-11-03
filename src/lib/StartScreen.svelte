@@ -174,6 +174,17 @@
           <div><small>LANES</small><strong>04</strong></div>
         </div>
       </div>
+      <div class="mods-area">
+        <div class="mods-heading"><span>GAME MODS</span><small>{activeMods.length} ACTIVE</small></div>
+        <div class="mods-grid">
+          {#each MODS as mod}
+            <button type="button" class="mod-option" class:active={activeMods.includes(mod.id)} onclick={() => toggleMod(mod.id)} aria-pressed={activeMods.includes(mod.id)}>
+              <span class="mod-check">{activeMods.includes(mod.id) ? '✓' : '+'}</span>
+              <span class="mod-copy"><strong>{mod.label}</strong><small>{mod.description}</small></span>
+            </button>
+          {/each}
+        </div>
+      </div>
     </section>
   </main>
 
