@@ -75,6 +75,7 @@ export interface ResultsData {
   fullCombo: boolean;
   personalBest?: boolean;
   bestScore?: number;
+  mods?: string[];
 }
 
 export const KEY_LANES: Record<string, LaneIndex> = {
