@@ -4,11 +4,12 @@
   import { LANE_ARROWS, LANE_ARROW_NAMES } from '../lib/types';
   import { DEFAULT_SETTINGS, loadSettings, saveSettings, type GameplaySettings } from './settings';
   import { getStatsSummary } from './stats';
+  import { MODS, normalizeMods, type ModId } from './mods';
 
   let {
     onPlay,
   }: {
-    onPlay: (songId: string, difficulty: keyof SongDefinition['charts'], settings: GameplaySettings) => void;
+    onPlay: (songId: string, difficulty: keyof SongDefinition['charts'], settings: GameplaySettings, mods: ModId[]) => void;
   } = $props();
 
   let selectedSong = $state<string>(SONGS[0].id);
@@ -18,6 +19,7 @@
   let showControls = $state(false);
   let showSettings = $state(false);
   let settings = $state<GameplaySettings>(loadSettings());
+  let activeMods = $state<ModId[]>([]);
 
   const stats = getStatsSummary();
   const difficulties: (keyof SongDefinition['charts'])[] = ['Easy', 'Normal', 'Hard'];
@@ -35,9 +37,9 @@
       });
   });
 
-  function handlePlay() {
+  function toggleMod(id: ModId) {\n    activeMods = normalizeMods(activeMods.includes(id) ? activeMods.filter((mod) => mod !== id) : [...activeMods, id]);\n  }\n\n  function handlePlay() {
     saveSettings(settings);
-    onPlay(selectedSong, selectedDifficulty, settings);
+    onPlay(selectedSong, selectedDifficulty, settings, activeMods);
   }
 </script>
 
@@ -224,7 +226,7 @@
   .difficulty-option{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:11px;border:1px solid rgba(255,255,255,.08);border-radius:7px;background:rgba(255,255,255,.025);color:#85869a;text-align:left}
   .difficulty-option span{font-size:9px;font-weight:900;letter-spacing:1px}.difficulty-option small{font-size:8px;color:#666779}
   .difficulty-option.active.easy{border-color:#22d3ee;background:rgba(34,211,238,.08);color:#67e8f9}.difficulty-option.active.normal{border-color:#a78bfa;background:rgba(167,139,250,.1);color:#c4b5fd}.difficulty-option.active.hard{border-color:#fb7185;background:rgba(251,113,133,.08);color:#fda4af}
-  .chart-summary{display:grid;grid-template-columns:repeat(3,1fr);margin-top:17px;padding-top:15px;border-top:1px solid rgba(255,255,255,.07)}
+  .mods-area{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)}.mods-heading{display:flex;justify-content:space-between;margin-bottom:10px;color:#85869a;font-size:9px;font-weight:850;letter-spacing:1.3px}.mods-heading small{color:#a78bfa;font-size:8px}.mods-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.mod-option{display:flex;align-items:flex-start;gap:9px;min-width:0;padding:9px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:rgba(255,255,255,.02);color:#aaaaba;text-align:left}.mod-option.active{border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.09);color:#eee8ff}.mod-check{display:grid;place-items:center;flex:none;width:17px;height:17px;border:1px solid rgba(255,255,255,.2);border-radius:4px;color:#c4b5fd;font-size:11px}.mod-copy{display:grid;gap:4px}.mod-copy strong{font-size:9px}.mod-copy small{color:#77788b;font-size:8px;line-height:1.4}.mod-option.active .mod-copy small{color:#a5a0b9}\n  .chart-summary{display:grid;grid-template-columns:repeat(3,1fr);margin-top:17px;padding-top:15px;border-top:1px solid rgba(255,255,255,.07)}
   .chart-summary>div{display:flex;flex-direction:column;gap:4px}.chart-summary small{color:#6f7083;font-size:8px;font-weight:850;letter-spacing:1.3px}.chart-summary strong{font-size:16px;font-weight:850;font-variant-numeric:tabular-nums}.chart-summary i{font-style:normal;font-size:9px;color:#85869a}
   .footer{height:55px;border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;color:#656678;font-size:8px;font-weight:850;letter-spacing:1.2px}.footer b{color:#a78bfa;margin:0 7px}.footer kbd{height:19px;min-width:20px;font-size:8px;margin-left:3px}
   @media(max-width:850px){.menu-layout{grid-template-columns:1fr;gap:38px;padding:48px 0}.hero-foot{margin-top:32px}.hero h1{font-size:56px}}
