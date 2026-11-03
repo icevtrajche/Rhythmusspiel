@@ -4,6 +4,7 @@
   import type { SongDefinition, ResultsData } from './types';
   import type { HudData } from './gameEngine';
   import type { GameplaySettings } from './settings';
+  import { transformChart, type ModId } from './mods';
   import { KEY_LANES, MAX_SCORE } from './types';
   import { AudioEngine } from './audioEngine';
   import { GameEngine } from './gameEngine';
@@ -13,12 +14,14 @@
     song,
     difficulty,
     settings,
+    mods,
     onEnd,
     onQuit,
   }: {
     song: SongDefinition;
     difficulty: keyof SongDefinition['charts'];
     settings: GameplaySettings;
+    mods: ModId[];
     onEnd: (results: ResultsData) => void;
     onQuit: () => void;
   } = $props();
@@ -105,7 +108,7 @@
     audio = new AudioEngine();
     await audio.resume();
 
-    const chart = song.charts[difficulty];
+    const chart = transformChart(song.charts[difficulty], mods, `${song.id}-${difficulty}`);
     const dpr = window.devicePixelRatio || 1;
     const cssW = canvas.clientWidth;
     const cssH = canvas.clientHeight;
@@ -138,6 +141,7 @@
       },
       LEAD_IN_MS,
       settings.timingOffsetMs,
+      { easy: mods.includes('easy'), hardRock: mods.includes('hard-rock'), perfect: mods.includes('perfect') },
     );
 
     engine.start();
@@ -212,7 +216,7 @@
     </div>
     <div class="hud-item diff-display">
       <span class="hud-label">Track</span>
-      <span class="hud-value small">{song.name} · {difficulty}</span>
+      <span class="hud-value small">{song.name} · {difficulty}{mods.length ? ` · ${mods.map((mod) => mod.toUpperCase()).join(' / ')}` : ''}</span>
     </div>
   </div>
 
