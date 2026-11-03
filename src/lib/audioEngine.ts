@@ -28,7 +28,7 @@ export class AudioEngine {
   /**
    * Click for key presses & judgement feedback — short filtered noise burst.
    */
-  playClick(): void {
+  playClick(volume = 0.15): void {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const buffer = this.ctx.createBuffer(
@@ -46,7 +46,7 @@ export class AudioEngine {
     filter.type = 'bandpass';
     filter.frequency.value = 1800;
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.setValueAtTime(Math.max(0, volume), t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
     src.connect(filter).connect(gain).connect(this.ctx.destination);
     src.start(t);
