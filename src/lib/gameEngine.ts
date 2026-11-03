@@ -58,7 +58,7 @@ export class GameEngine {
     this.leadInMs = leadInMs;
     this.timingOffsetMs = timingOffsetMs;
     const factor = mods.easy ? 1.5 : mods.hardRock ? 0.75 : 1;
-    this.windows = { perfect: this.windows.perfect * factor, great: this.windows.great * factor, good: this.windows.good * factor };
+    this.windows = { perfect: JUDGEMENT_WINDOWS.perfect * factor, great: JUDGEMENT_WINDOWS.great * factor, good: JUDGEMENT_WINDOWS.good * factor };
     this.perfectOnly = Boolean(mods.perfect);
     this.notes = chart.notes
       .slice()
@@ -117,7 +117,7 @@ export class GameEngine {
         }
         continue;
       }
-      if (n.judgement === null && elapsed > n.note.timeMs + JUDGEMENT_WINDOWS.good) {
+      if (n.judgement === null && elapsed > n.note.timeMs + this.windows.good) {
         n.judgement = 'miss';
         this.registerMiss();
         changed = true;
@@ -143,9 +143,9 @@ export class GameEngine {
 
   private judge(deltaMs: number): JudgementName {
     const abs = Math.abs(deltaMs);
-    if (abs <= JUDGEMENT_WINDOWS.perfect) return 'perfect';
-    if (abs <= JUDGEMENT_WINDOWS.great) return 'great';
-    return 'good';
+    if (abs <= this.windows.perfect) return 'perfect';
+    if (abs <= this.windows.great) return 'great';
+    return this.perfectOnly ? 'miss' : 'good';
   }
 
   private registerHit(j: JudgementName): void {
