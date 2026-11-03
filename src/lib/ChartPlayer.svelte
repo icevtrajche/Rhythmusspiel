@@ -71,7 +71,8 @@
 
     const h = engine.getHud();
     const results: ResultsData = {
-      songId: song.id,\n      songName: song.name,
+      songId: song.id,
+      songName: song.name,
       difficulty,
       score: h.score,
       maxScore: MAX_SCORE,
@@ -80,7 +81,8 @@
       counts: { ...h.counts },
       grade: computeGrade(h.accuracy),
       fullCombo: h.counts.miss === 0,
-      mods: [...mods],\n      replayEvents: replayMode ? [...(replayEvents ?? [])] : [...recordedInputs],
+      mods: [...mods],
+      replayEvents: replayMode ? [...(replayEvents ?? [])] : [...recordedInputs],
     };
 
     onEnd(results);
@@ -163,7 +165,16 @@
         clearInterval(cdInterval);
         countdownVisible = false;
         started = true;
-        audio.startMusic(chart.bpm, chart.notes.length, () => {});\n        if (replayMode) {\n          for (const event of replayEvents ?? []) {\n            const timer = window.setTimeout(() => {\n              if (event.down) { pressedLanes.add(event.lane); engine.onKeyDown(event.lane); }\n              else { pressedLanes.delete(event.lane); engine.onKeyUp(event.lane); }\n            }, Math.max(0, event.atMs));\n            replayTimers.push(timer);\n          }\n        }
+        audio.startMusic(chart.bpm, chart.notes.length, () => {});
+        if (replayMode) {
+          for (const event of replayEvents ?? []) {
+            const timer = window.setTimeout(() => {
+              if (event.down) { pressedLanes.add(event.lane); engine.onKeyDown(event.lane); }
+              else { pressedLanes.delete(event.lane); engine.onKeyUp(event.lane); }
+            }, Math.max(0, event.atMs));
+            replayTimers.push(timer);
+          }
+        }
       }
     }, 1000);
   }
@@ -210,7 +221,8 @@
 </script>
 
 <div class="game-container">
-  {#if replayMode}<div class="replay-indicator">REPLAY · INPUT PLAYBACK</div>{/if}\n  <div class="hud-bar">
+  {#if replayMode}<div class="replay-indicator">REPLAY · INPUT PLAYBACK</div>{/if}
+  <div class="hud-bar">
     <button type="button" class="quit-btn" onclick={onQuit}>✕</button>
     <div class="hud-item">
       <span class="hud-label">Score</span>
@@ -349,7 +361,8 @@
     text-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
   }
 
-  .replay-indicator{position:absolute;top:58px;right:18px;z-index:11;padding:6px 9px;border:1px solid rgba(167,139,250,.35);border-radius:5px;background:rgba(167,139,250,.1);color:#c4b5fd;font-size:8px;font-weight:900;letter-spacing:1px}\n  @media (max-width: 600px) {
+  .replay-indicator{position:absolute;top:58px;right:18px;z-index:11;padding:6px 9px;border:1px solid rgba(167,139,250,.35);border-radius:5px;background:rgba(167,139,250,.1);color:#c4b5fd;font-size:8px;font-weight:900;letter-spacing:1px}
+  @media (max-width: 600px) {
     .hud-bar {
       gap: 14px;
       padding: 8px 14px;
