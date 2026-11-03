@@ -9,8 +9,10 @@
   let {
     onPlay,
     onTutorial,
+    onReplays,
   }: {
     onTutorial: () => void;
+    onReplays: () => void;
     onPlay: (songId: string, difficulty: keyof SongDefinition['charts'], settings: GameplaySettings, mods: ModId[]) => void;
   } = $props();
 
@@ -68,6 +70,7 @@
           <span class="play-icon">▶</span> PLAY SELECTED TRACK
         </button>
         <button type="button" class="text-action" onclick={onTutorial}>TUTORIAL <span>↗</span></button>
+        <button type="button" class="text-action" onclick={onReplays}>REPLAYS <span>↗</span></button>
         <button type="button" class="text-action" onclick={() => (showControls = !showControls)}>
           {showControls ? 'HIDE' : 'VIEW'} CONTROLS <span>⌄</span>
         </button>
