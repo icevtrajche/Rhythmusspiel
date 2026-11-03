@@ -5,6 +5,7 @@
   import { findSong } from './lib/songs';
   import type { GameState, ResultsData, SongDefinition } from './lib/types';
   import { loadSettings, type GameplaySettings } from './lib/settings';
+  import { recordRun } from './lib/stats';
 
   let gameState = $state<GameState>('menu');
   let currentSongId = $state('');
@@ -24,7 +25,8 @@
   }
 
   function handleEnd(r: ResultsData) {
-    results = r;
+    const personal = recordRun(r);
+    results = { ...r, personalBest: personal.personalBest, bestScore: personal.bestScore };
     gameState = 'results';
   }
 
