@@ -29,7 +29,7 @@ export class AudioEngine {
    * Click for key presses & judgement feedback — short filtered noise burst.
    */
   playClick(volume = 0.15): void {
-    if (!this.ctx) return;
+    if (!this.ctx || volume <= 0) return;
     const t = this.ctx.currentTime;
     const buffer = this.ctx.createBuffer(
       1,
