@@ -22,6 +22,7 @@
 
   <h1>{results.songName}</h1>
   <p class="diff">{results.difficulty}</p>
+  {#if results.mods?.length}<p class="result-mods">{results.mods.map((mod) => mod.toUpperCase()).join(' · ')}</p>{/if}
 
   {#if results.personalBest}
     <div class="pb-banner">✦ NEW PERSONAL BEST</div>
@@ -68,7 +69,7 @@
 </div>
 
 <style>
-  .pb-banner{padding:7px 13px;border:1px solid rgba(167,139,250,.45);border-radius:999px;color:#c4b5fd;background:rgba(167,139,250,.1);font-size:10px;font-weight:900;letter-spacing:1.5px}
+  .result-mods{margin:-8px 0 12px;color:#a78bfa;font-size:9px;font-weight:850;letter-spacing:1.1px}\n  .pb-banner{padding:7px 13px;border:1px solid rgba(167,139,250,.45);border-radius:999px;color:#c4b5fd;background:rgba(167,139,250,.1);font-size:10px;font-weight:900;letter-spacing:1.5px}
   .best-score{margin:-8px 0 0;color:#85869a;font-size:9px;font-weight:850;letter-spacing:1.5px}
   .best-score strong{margin-left:7px;color:#c4b5fd;font:800 13px ui-monospace,monospace;letter-spacing:0}
   @media(max-width:480px){.results-actions{flex-direction:column}.results-container{padding:28px 16px}}
