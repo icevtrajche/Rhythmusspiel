@@ -2,11 +2,12 @@
   import { SONGS } from '../lib/songs';
   import type { SongDefinition } from '../lib/types';
   import { LANE_ARROWS, LANE_ARROW_NAMES } from '../lib/types';
+  import { loadSettings, saveSettings, type GameplaySettings } from './settings';
 
   let {
     onPlay,
   }: {
-    onPlay: (songId: string, difficulty: keyof SongDefinition['charts']) => void;
+    onPlay: (songId: string, difficulty: keyof SongDefinition['charts'], settings: GameplaySettings) => void;
   } = $props();
 
   let selectedSong = $state<string>(SONGS[0].id);
@@ -14,6 +15,8 @@
   let search = $state('');
   let sortBy = $state<'title' | 'bpm' | 'notes'>('title');
   let showControls = $state(false);
+  let showSettings = $state(false);
+  let settings = $state<GameplaySettings>(loadSettings());
 
   const difficulties: (keyof SongDefinition['charts'])[] = ['Easy', 'Normal', 'Hard'];
   const selectedTrack = $derived(SONGS.find((song) => song.id === selectedSong) ?? SONGS[0]);
@@ -31,7 +34,8 @@
   });
 
   function handlePlay() {
-    onPlay(selectedSong, selectedDifficulty);
+    saveSettings(settings);
+    onPlay(selectedSong, selectedDifficulty, settings);
   }
 </script>
 
@@ -56,6 +60,7 @@
         <button type="button" class="text-action" onclick={() => (showControls = !showControls)}>
           {showControls ? 'HIDE' : 'VIEW'} CONTROLS <span>⌄</span>
         </button>
+        <button type="button" class="text-action" onclick={() => (showSettings = !showSettings)}>{showSettings ? 'HIDE' : 'GAMEPLAY'} SETTINGS <span>⌄</span></button>
       </div>
       {#if showControls}
         <div class="controls-panel">
@@ -67,6 +72,14 @@
             </div>
           {/each}
           <p>Tap when notes reach the receptors. Keep the key held for hold notes.</p>
+        </div>
+      {/if}
+      {#if showSettings}
+        <div class="settings-panel">
+          <div class="setting-row"><label for="scroll-speed">Scroll speed <strong>{settings.scrollSpeed}</strong></label><input id="scroll-speed" type="range" min="300" max="1000" step="25" bind:value={settings.scrollSpeed} /></div>
+          <div class="setting-row"><label for="timing-offset">Timing offset <strong>{settings.timingOffsetMs} ms</strong></label><input id="timing-offset" type="range" min="-150" max="150" step="5" bind:value={settings.timingOffsetMs} /></div>
+          <div class="setting-row"><label for="click-volume">Key sound volume <strong>{Math.round(settings.clickVolume * 100)}%</strong></label><input id="click-volume" type="range" min="0" max="0.5" step="0.01" bind:value={settings.clickVolume} /></div>
+          <button type="button" class="reset-settings" onclick={() => (settings = loadSettings())}>RESET DEFAULTS</button>
         </div>
       {/if}
       <div class="hero-foot"><span class="pulse"></span> BUILT FOR THE BEAT</div>
@@ -177,6 +190,9 @@
   .control-key{display:inline-flex;align-items:center;gap:7px;margin:0 12px 8px 0;color:#9293a6;font-size:10px}.control-arrow{color:#a78bfa;font-size:15px}
   kbd{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;padding:0 6px;border:1px solid rgba(255,255,255,.16);border-radius:5px;background:#171725;color:#fff;font:700 10px ui-monospace,monospace}
   .controls-panel p{margin:7px 0 0;color:#77788b;font-size:10px}
+  .settings-panel{margin-top:12px;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.025);display:grid;gap:13px}
+  .setting-row{display:grid;gap:7px}.setting-row label{display:flex;justify-content:space-between;gap:12px;color:#9293a6;font-size:10px}.setting-row strong{color:#c4b5fd;font-variant-numeric:tabular-nums}.setting-row input{width:100%;accent-color:#a78bfa}
+  .reset-settings{justify-self:start;border:0;background:none;color:#85869a;font-size:9px;font-weight:850;letter-spacing:1px;padding:2px 0}.reset-settings:hover{color:#c4b5fd}
   .library{border:1px solid rgba(255,255,255,.09);border-radius:14px;background:linear-gradient(145deg,rgba(25,25,43,.96),rgba(13,14,24,.96));padding:clamp(20px,3vw,32px);box-shadow:0 28px 80px rgba(0,0,0,.3)}
   .library-heading{display:flex;align-items:end;justify-content:space-between;margin-bottom:22px}.library-heading h2{font-size:25px;letter-spacing:-.8px;margin:7px 0 0;color:#f4f4f8;text-transform:none}
   .track-count{color:#77788b;font-size:9px;font-weight:850;letter-spacing:1.4px;padding-bottom:4px}
