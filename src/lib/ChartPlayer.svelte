@@ -106,7 +106,7 @@
   function handleKeyup(e: KeyboardEvent) {
     const key = e.key.toLowerCase();
     const lane = KEY_LANES[key];
-    if (lane === undefined) return;
+    if (lane === undefined || !engine) return;
     if (replayMode) return;
     pressedLanes.delete(lane);
     if (started) recordedInputs.push({ atMs: Math.max(0, engine.getElapsedMs()), lane, down: false });
