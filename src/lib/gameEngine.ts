@@ -69,7 +69,11 @@ export class GameEngine {
     return performance.now() - this.startTime;
   }
 
-  private getJudgementElapsedMs(): number {\n    return this.getElapsedMs() + this.timingOffsetMs;\n  }\n\n  getNotes(): ActiveNote[] {
+  private getJudgementElapsedMs(): number {
+    return this.getElapsedMs() + this.timingOffsetMs;
+  }
+
+  getNotes(): ActiveNote[] {
     return this.notes;
   }
 
@@ -168,7 +172,7 @@ export class GameEngine {
   }
 
   private tryPress(lane: number): void {
-    const elapsed = this.getElapsedMs();
+    const elapsed = this.getJudgementElapsedMs();
     let best: ActiveNote | null = null;
     let bestDelta = Infinity;
 
@@ -196,7 +200,7 @@ export class GameEngine {
     const n = this.notes.find((x) => x.holding && x.note.lane === lane);
     if (!n) return;
 
-    const elapsed = this.getElapsedMs();
+    const elapsed = this.getJudgementElapsedMs();
     const holdEnd = n.note.timeMs + (n.note.holdMs ?? 0);
     n.holding = false;
 
