@@ -66,10 +66,10 @@ export class GameEngine {
   }
 
   getElapsedMs(): number {
-    return performance.now() - this.startTime + this.timingOffsetMs;
+    return performance.now() - this.startTime;
   }
 
-  getNotes(): ActiveNote[] {
+  private getJudgementElapsedMs(): number {\n    return this.getElapsedMs() + this.timingOffsetMs;\n  }\n\n  getNotes(): ActiveNote[] {
     return this.notes;
   }
 
@@ -95,7 +95,7 @@ export class GameEngine {
   /** Called each frame. Marks unhit notes as missed and completes holds that reached their end. */
   updateMisses(): void {
     if (this.ended) return;
-    const elapsed = this.getElapsedMs();
+    const elapsed = this.getJudgementElapsedMs();
     let changed = false;
 
     for (const n of this.notes) {
