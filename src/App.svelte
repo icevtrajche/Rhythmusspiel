@@ -40,7 +40,11 @@
     gameState = 'playing';
   }
 
-  function handleTutorial() {\n    gameState = 'tutorial';\n  }\n\n  function handleMenu() {
+  function handleTutorial() {
+    gameState = 'tutorial';
+  }
+
+  function handleMenu() {
     results = null;
     gameState = 'menu';
   }
@@ -64,7 +68,9 @@
       onEnd={handleEnd}
       onQuit={handleQuit}
     />
-  {:else if gameState === 'tutorial'}\n    <TutorialScreen onBack={handleMenu} />\n  {:else if gameState === 'results' && results}
+  {:else if gameState === 'tutorial'}
+    <TutorialScreen onBack={handleMenu} />
+  {:else if gameState === 'results' && results}
     <ResultsScreen
       results={results}
       onReplay={handleReplay}
