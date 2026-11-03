@@ -3,6 +3,7 @@
   import type { SongDefinition } from '../lib/types';
   import { LANE_ARROWS, LANE_ARROW_NAMES } from '../lib/types';
   import { DEFAULT_SETTINGS, loadSettings, saveSettings, type GameplaySettings } from './settings';
+  import { getStatsSummary } from './stats';
 
   let {
     onPlay,
@@ -18,6 +19,7 @@
   let showSettings = $state(false);
   let settings = $state<GameplaySettings>(loadSettings());
 
+  const stats = getStatsSummary();
   const difficulties: (keyof SongDefinition['charts'])[] = ['Easy', 'Normal', 'Hard'];
   const selectedTrack = $derived(SONGS.find((song) => song.id === selectedSong) ?? SONGS[0]);
   const selectedChart = $derived(selectedTrack.charts[selectedDifficulty]);
@@ -83,6 +85,11 @@
         </div>
       {/if}
       <div class="hero-foot"><span class="pulse"></span> BUILT FOR THE BEAT</div>
+      <div class="career-stats">
+        <div><strong>{stats.totalPlays}</strong><span>PLAYS</span></div>
+        <div><strong>{stats.bestAccuracy.toFixed(2)}%</strong><span>BEST ACCURACY</span></div>
+        <div><strong>{stats.fullCombos}</strong><span>FULL COMBOS</span></div>
+      </div>
     </section>
 
     <section class="library">
@@ -185,7 +192,8 @@
   .primary-play{border:0;border-radius:9px;padding:16px 21px;background:#a78bfa;color:#100b20;font-size:10px;font-weight:950;letter-spacing:1.1px;box-shadow:0 8px 28px rgba(167,139,250,.22);transition:transform .18s,background .18s}.primary-play:hover{transform:translateY(-2px);background:#c4b5fd}
   .play-icon{margin-right:10px;font-size:11px}
   .text-action{border:0;background:none;color:#b9b9c8;font-size:9px;font-weight:850;letter-spacing:1.2px;padding:10px 0}.text-action span{color:#a78bfa;margin-left:5px}
-  .hero-foot{display:flex;align-items:center;gap:10px;margin-top:70px;color:#666779;font-size:9px;font-weight:800;letter-spacing:1.6px}
+  .hero-foot{display:flex;align-items:center;gap:10px;margin-top:48px;color:#666779;font-size:9px;font-weight:800;letter-spacing:1.6px}
+  .career-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)}.career-stats>div{display:flex;flex-direction:column;gap:4px}.career-stats strong{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;color:#d9d6e8}.career-stats span{font-size:8px;color:#6f7083;font-weight:850;letter-spacing:1px}
   .controls-panel{margin-top:22px;padding:15px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.025)}
   .control-key{display:inline-flex;align-items:center;gap:7px;margin:0 12px 8px 0;color:#9293a6;font-size:10px}.control-arrow{color:#a78bfa;font-size:15px}
   kbd{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;padding:0 6px;border:1px solid rgba(255,255,255,.16);border-radius:5px;background:#171725;color:#fff;font:700 10px ui-monospace,monospace}
