@@ -2,6 +2,7 @@
   import StartScreen from './lib/StartScreen.svelte';
   import ChartPlayer from './lib/ChartPlayer.svelte';
   import ResultsScreen from './lib/ResultsScreen.svelte';
+  import TutorialScreen from './lib/TutorialScreen.svelte';
   import { findSong } from './lib/songs';
   import type { GameState, ResultsData, SongDefinition } from './lib/types';
   import { loadSettings, type GameplaySettings } from './lib/settings';
@@ -39,7 +40,7 @@
     gameState = 'playing';
   }
 
-  function handleMenu() {
+  function handleTutorial() {\n    gameState = 'tutorial';\n  }\n\n  function handleMenu() {
     results = null;
     gameState = 'menu';
   }
@@ -53,7 +54,7 @@
 
 <main>
   {#if gameState === 'menu'}
-    <StartScreen onPlay={handlePlay} />
+    <StartScreen onPlay={handlePlay} onTutorial={handleTutorial} />
   {:else if gameState === 'playing' && currentSong}
     <ChartPlayer
       song={currentSong}
@@ -63,7 +64,7 @@
       onEnd={handleEnd}
       onQuit={handleQuit}
     />
-  {:else if gameState === 'results' && results}
+  {:else if gameState === 'tutorial'}\n    <TutorialScreen onBack={handleMenu} />\n  {:else if gameState === 'results' && results}
     <ResultsScreen
       results={results}
       onReplay={handleReplay}
