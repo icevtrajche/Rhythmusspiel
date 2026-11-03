@@ -1,4 +1,4 @@
-export type GameState = 'menu' | 'playing' | 'results';
+export type GameState = 'menu' | 'playing' | 'results' | 'tutorial';
 
 export type LaneIndex = 0 | 1 | 2 | 3;
 
