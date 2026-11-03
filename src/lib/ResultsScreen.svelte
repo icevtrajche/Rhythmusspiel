@@ -22,12 +22,10 @@
 
   <h1>{results.songName}</h1>
   <p class="diff">{results.difficulty}</p>
-  {#if results.personalBest}<div class="pb-banner">✦ NEW PERSONAL BEST</div>{/if}
+
   {#if results.personalBest}
     <div class="pb-banner">✦ NEW PERSONAL BEST</div>
   {/if}
-
-  {#if results.bestScore !== undefined}<p class="best-score">PERSONAL BEST <strong>{results.bestScore.toLocaleString()}</strong></p>{/if}
 
   <div class="score-display">
     <span class="score-value">{results.score.toLocaleString()}</span>
@@ -64,11 +62,14 @@
   </div>
 
   <div class="results-actions">
-    <button type="button" class="btn-secondary" onclick={onReplay}>
-      ↻ Retry
-    </button>
-    <button type="button" class="btn-primary" onclick={onMenu}>
-      ◀ Back to Menu
-    </button>
+    <button type="button" class="btn-secondary" onclick={onReplay}>↻ Retry</button>
+    <button type="button" class="btn-primary" onclick={onMenu}>◀ Back to Menu</button>
   </div>
 </div>
+
+<style>
+  .pb-banner{padding:7px 13px;border:1px solid rgba(167,139,250,.45);border-radius:999px;color:#c4b5fd;background:rgba(167,139,250,.1);font-size:10px;font-weight:900;letter-spacing:1.5px}
+  .best-score{margin:-8px 0 0;color:#85869a;font-size:9px;font-weight:850;letter-spacing:1.5px}
+  .best-score strong{margin-left:7px;color:#c4b5fd;font:800 13px ui-monospace,monospace;letter-spacing:0}
+  @media(max-width:480px){.results-actions{flex-direction:column}.results-container{padding:28px 16px}}
+</style>
