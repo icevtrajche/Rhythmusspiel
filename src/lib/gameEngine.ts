@@ -58,7 +58,7 @@ export class GameEngine {
     this.leadInMs = leadInMs;
     this.timingOffsetMs = timingOffsetMs;
     const factor = mods.easy ? 1.5 : mods.hardRock ? 0.75 : 1;
-    this.windows = { perfect: JUDGEMENT_WINDOWS.perfect * factor, great: JUDGEMENT_WINDOWS.great * factor, good: this.windows.good * factor };
+    this.windows = { perfect: JUDGEMENT_WINDOWS.perfect * factor, great: JUDGEMENT_WINDOWS.great * factor, good: JUDGEMENT_WINDOWS.good * factor };
     this.perfectOnly = Boolean(mods.perfect);
     this.notes = chart.notes
       .slice()
