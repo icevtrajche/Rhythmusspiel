@@ -63,8 +63,8 @@ export const KEY_BINDINGS: Record<LaneIndex, string> = {
 
 export const MAX_SCORE = 1_000_000;
 
-export interface ResultsData {
-  songName: string;
+export interface ReplayEvent {\n  atMs: number;\n  lane: LaneIndex;\n  down: boolean;\n}\n\nexport interface ResultsData {
+  songId: string;\n  songName: string;
   difficulty: keyof SongDefinition['charts'];
   score: number;
   maxScore: number;
@@ -75,7 +75,7 @@ export interface ResultsData {
   fullCombo: boolean;
   personalBest?: boolean;
   bestScore?: number;
-  mods?: string[];
+  mods?: string[];\n  replayEvents?: ReplayEvent[];
 }
 
 export const KEY_LANES: Record<string, LaneIndex> = {
