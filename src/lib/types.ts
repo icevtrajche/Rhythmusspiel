@@ -73,6 +73,8 @@ export interface ResultsData {
   counts: Record<JudgementName, number>;
   grade: string;
   fullCombo: boolean;
+  personalBest?: boolean;
+  bestScore?: number;
 }
 
 export const KEY_LANES: Record<string, LaneIndex> = {
