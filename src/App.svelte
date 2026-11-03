@@ -4,16 +4,20 @@
   import ResultsScreen from './lib/ResultsScreen.svelte';
   import { findSong } from './lib/songs';
   import type { GameState, ResultsData, SongDefinition } from './lib/types';
+  import { loadSettings, type GameplaySettings } from './lib/settings';
 
   let gameState = $state<GameState>('menu');
   let currentSongId = $state('');
   let currentDifficulty = $state<keyof SongDefinition['charts']>('Normal');
   let results = $state<ResultsData | null>(null);
+  let currentSettings = $state<GameplaySettings>(loadSettings());
 
   function handlePlay(
     songId: string,
     difficulty: keyof SongDefinition['charts'],
+    settings: GameplaySettings,
   ) {
+    currentSettings = settings;
     currentSongId = songId;
     currentDifficulty = difficulty;
     gameState = 'playing';
@@ -48,6 +52,7 @@
     <ChartPlayer
       song={currentSong}
       difficulty={currentDifficulty}
+      settings={currentSettings}
       onEnd={handleEnd}
       onQuit={handleQuit}
     />
