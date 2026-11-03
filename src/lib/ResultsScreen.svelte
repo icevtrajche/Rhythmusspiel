@@ -22,11 +22,21 @@
 
   <h1>{results.songName}</h1>
   <p class="diff">{results.difficulty}</p>
+  {#if results.personalBest}<div class="pb-banner">✦ NEW PERSONAL BEST</div>{/if}
+  {#if results.personalBest}
+    <div class="pb-banner">✦ NEW PERSONAL BEST</div>
+  {/if}
+
+  {#if results.bestScore !== undefined}<p class="best-score">PERSONAL BEST <strong>{results.bestScore.toLocaleString()}</strong></p>{/if}
 
   <div class="score-display">
     <span class="score-value">{results.score.toLocaleString()}</span>
     <span class="score-label">SCORE</span>
   </div>
+
+  {#if results.bestScore !== undefined}
+    <p class="best-score">PERSONAL BEST <strong>{results.bestScore.toLocaleString()}</strong></p>
+  {/if}
 
   <div class="stats-grid">
     <div class="stat-box">
