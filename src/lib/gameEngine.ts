@@ -50,11 +50,16 @@ export class GameEngine {
   private callbacks: EngineCallbacks;
   private leadInMs: number;
   private timingOffsetMs: number;
+  private windows = { ...JUDGEMENT_WINDOWS };
+  private perfectOnly = false;
 
-  constructor(chart: Chart, callbacks: EngineCallbacks, leadInMs: number, timingOffsetMs = 0) {
+  constructor(chart: Chart, callbacks: EngineCallbacks, leadInMs: number, timingOffsetMs = 0, mods: { easy?: boolean; hardRock?: boolean; perfect?: boolean } = {}) {
     this.callbacks = callbacks;
     this.leadInMs = leadInMs;
     this.timingOffsetMs = timingOffsetMs;
+    const factor = mods.easy ? 1.5 : mods.hardRock ? 0.75 : 1;
+    this.windows = { perfect: this.windows.perfect * factor, great: this.windows.great * factor, good: this.windows.good * factor };
+    this.perfectOnly = Boolean(mods.perfect);
     this.notes = chart.notes
       .slice()
       .sort((a, b) => a.timeMs - b.timeMs)
@@ -190,8 +195,12 @@ export class GameEngine {
     if (!best) return;
 
     best.judgement = this.judge(bestDelta);
-    best.holding = (best.note.holdMs ?? 0) > 0;
-    this.registerHit(best.judgement);
+    if (best.judgement === 'miss') {
+      this.registerMiss();
+    } else {
+      best.holding = (best.note.holdMs ?? 0) > 0;
+      this.registerHit(best.judgement);
+    }
     this.emit();
     this.checkEnd();
   }
