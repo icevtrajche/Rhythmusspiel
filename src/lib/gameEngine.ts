@@ -58,7 +58,7 @@ export class GameEngine {
     this.leadInMs = leadInMs;
     this.timingOffsetMs = timingOffsetMs;
     const factor = mods.easy ? 1.5 : mods.hardRock ? 0.75 : 1;
-    this.windows = { perfect: JUDGEMENT_WINDOWS.perfect * factor, great: JUDGEMENT_WINDOWS.great * factor, good: JUDGEMENT_WINDOWS.good * factor };
+    this.windows = { perfect: JUDGEMENT_WINDOWS.perfect * factor, great: JUDGEMENT_WINDOWS.great * factor, good: this.windows.good * factor };
     this.perfectOnly = Boolean(mods.perfect);
     this.notes = chart.notes
       .slice()
@@ -184,8 +184,8 @@ export class GameEngine {
     for (const n of this.notes) {
       if (n.note.lane !== lane || n.judgement !== null) continue;
       const delta = n.note.timeMs - elapsed;
-      if (delta > JUDGEMENT_WINDOWS.good) break;
-      if (delta < -JUDGEMENT_WINDOWS.good) continue;
+      if (delta > this.windows.good) break;
+      if (delta < -this.windows.good) continue;
       if (Math.abs(delta) < Math.abs(bestDelta)) {
         bestDelta = delta;
         best = n;
@@ -213,7 +213,7 @@ export class GameEngine {
     const holdEnd = n.note.timeMs + (n.note.holdMs ?? 0);
     n.holding = false;
 
-    if (elapsed < holdEnd - JUDGEMENT_WINDOWS.good) {
+    if (elapsed < holdEnd - this.windows.good) {
       this.failHold(n);
     } else {
       this.completeHold(n);
