@@ -28,12 +28,6 @@ export interface SongDefinition {
 
 export type JudgementName = 'perfect' | 'great' | 'good' | 'miss';
 
-export interface JudgementResult {
-  name: JudgementName;
-  deltaMs: number;
-  lane: LaneIndex;
-}
-
 export interface JudgementWindows {
   perfect: number; // ±30ms
   great: number; // ±70ms

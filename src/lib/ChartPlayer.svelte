@@ -1,13 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { fade } from 'svelte/transition';
-  import type {
-    SongDefinition,
-    JudgementResult,
-    ResultsData,
-  } from './types';
+  import type { SongDefinition, ResultsData } from './types';
   import type { HudData } from './gameEngine';
-  import { KEY_LANES, MAX_SCORE, JUDGEMENT_SCORES } from './types';
+  import { KEY_LANES, MAX_SCORE } from './types';
   import { AudioEngine } from './audioEngine';
   import { GameEngine } from './gameEngine';
   import { GameRenderer } from './renderer';
@@ -47,6 +43,8 @@
 
   const SCROLL_SPEED = 600;
   const HIT_LINE_RATIO = 0.82;
+  const MAX_LANE_WIDTH = 130;
+  const LEAD_IN_MS = 3000;
 
   function computeGrade(accuracy: number): string {
     if (accuracy >= 98) return 'S';
@@ -62,21 +60,15 @@
     audio.stopMusic();
 
     const h = engine.getHud();
-    const totalNotes = engine.totalNotes;
-    const maxPossible =
-      totalNotes * JUDGEMENT_SCORES.perfect +
-      (totalNotes * (totalNotes - 1)) / 2 * 2;
-    const accuracy = maxPossible > 0 ? (h.score / maxPossible) * 100 : 0;
-
     const results: ResultsData = {
       songName: song.name,
       difficulty,
       score: h.score,
       maxScore: MAX_SCORE,
-      accuracy: Math.min(accuracy, 100),
+      accuracy: h.accuracy,
       maxCombo: h.maxCombo,
       counts: { ...h.counts },
-      grade: computeGrade(Math.min(accuracy, 100)),
+      grade: computeGrade(h.accuracy),
       fullCombo: h.counts.miss === 0,
     };
 
@@ -121,33 +113,28 @@
     ctx.scale(dpr, dpr);
 
     const hitLineY = cssH * HIT_LINE_RATIO;
+    const laneWidth = Math.min(cssW / 4, MAX_LANE_WIDTH);
 
     renderer = new GameRenderer(ctx, {
-      laneWidth: cssW / 4,
-      laneCount: 4,
+      originX: (cssW - laneWidth * 4) / 2,
+      laneWidth,
       canvasWidth: cssW,
       canvasHeight: cssH,
       hitLineY,
-      receptorY: hitLineY,
       scrollSpeed: SCROLL_SPEED,
     });
 
     engine = new GameEngine(
       chart,
       {
-        onJudgement: (_j: JudgementResult) => {},
         onHud: (newHud: HudData) => {
-          hud = { ...newHud };
+          hud = newHud;
         },
         onEnd: () => {
           setTimeout(() => finishGame(), 800);
         },
       },
-      {
-        scrollSpeed: SCROLL_SPEED,
-        hitLineY,
-        leadInMs: 3000,
-      },
+      LEAD_IN_MS,
     );
 
     engine.start();
@@ -169,30 +156,16 @@
     if (engine && renderer && started && !engine.isEnded()) {
       engine.updateMisses();
 
-      const elapsed = engine.getElapsedMs();
-      const notes = engine.getNotes();
       const h = engine.getHud();
       const judgeAge = performance.now() - h.lastJudgementAt;
 
       renderer.render({
-        elapsedMs: elapsed,
-        notes: notes.map((n) => ({
-          note: n.note,
-          hit: n.hit,
-          missed: n.missed,
-          holding: n.holding,
-          holdComplete: n.holdComplete,
-          holdDropped: n.holdDropped,
-        })),
-        pressedLanes: new Set(pressedLanes),
+        elapsedMs: engine.getElapsedMs(),
+        notes: engine.getNotes(),
+        pressedLanes,
         judgement:
           h.lastJudgement && judgeAge < 600
-            ? {
-                name: h.lastJudgement,
-                deltaMs: 0,
-                lane: 0,
-                at: h.lastJudgementAt,
-              }
+            ? { name: h.lastJudgement, at: h.lastJudgementAt }
             : null,
         combo: h.combo,
       });

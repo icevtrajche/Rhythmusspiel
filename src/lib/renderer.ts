@@ -1,68 +1,94 @@
-import type { ChartNote } from './types';
-import { LANE_ARROWS } from './types';
+import type { ActiveNote } from './gameEngine';
+import type { JudgementName, LaneIndex } from './types';
+import { JUDGEMENT_DISPLAY, KEY_BINDINGS } from './types';
 
-interface RenderConfig {
+export interface RenderConfig {
+  originX: number;
   laneWidth: number;
-  laneCount: number;
   canvasWidth: number;
   canvasHeight: number;
   hitLineY: number;
   scrollSpeed: number;
-  receptorY: number;
 }
 
-interface RenderNote {
-  note: ChartNote;
-  hit: boolean;
-  missed: boolean;
-  /** For hold notes: true while the player is actively holding */
-  holding: boolean;
-  /** For hold notes: true when the hold is complete */
-  holdComplete: boolean;
-  /** For hold notes: true when the hold was dropped early */
-  holdDropped: boolean;
-}
-
-interface RenderState {
+export interface RenderState {
   elapsedMs: number;
-  notes: RenderNote[];
-  pressedLanes: Set<number>;
-  judgement: { name: string; deltaMs: number; lane: number; at: number } | null;
+  notes: ActiveNote[];
+  pressedLanes: ReadonlySet<number>;
+  judgement: { name: JudgementName; at: number } | null;
   combo: number;
 }
 
-const LANE_COLORS = [
-  { r: 74, g: 222, b: 128, hex: '#4ade80' }, // green - Left
-  { r: 96, g: 165, b: 250, hex: '#60a5fa' }, // blue - Down
-  { r: 251, g: 146, b: 60, hex: '#fb923c' }, // orange - Up
-  { r: 239, g: 68, b: 68, hex: '#ef4444' }, // red - Right
+interface LaneColor {
+  r: number;
+  g: number;
+  b: number;
+  hex: string;
+}
+
+const LANE_COLORS: LaneColor[] = [
+  { r: 74, g: 222, b: 128, hex: '#4ade80' },
+  { r: 96, g: 165, b: 250, hex: '#60a5fa' },
+  { r: 251, g: 146, b: 60, hex: '#fb923c' },
+  { r: 239, g: 68, b: 68, hex: '#ef4444' },
 ];
 
-const JUDGE_COLORS: Record<string, string> = {
+const MISSED_COLOR: LaneColor = { r: 75, g: 85, b: 99, hex: '#4b5563' };
+
+const JUDGE_COLORS: Record<JudgementName, string> = {
   perfect: '#fbbf24',
   great: '#22d3ee',
   good: '#a3e635',
   miss: '#ef4444',
 };
 
-const NOTE_HEIGHT = 28;
-const HOLD_TAIL_WIDTH_RATIO = 0.5;
+const LANE_ROTATIONS = [Math.PI, Math.PI / 2, -Math.PI / 2, 0];
+
+const MAX_ARROW_SIZE = 104;
+const ARROW_LANE_RATIO = 0.74;
+
+function rgba(c: LaneColor, alpha: number): string {
+  return `rgba(${c.r},${c.g},${c.b},${alpha})`;
+}
 
 export class GameRenderer {
   private ctx: CanvasRenderingContext2D;
   private cfg: RenderConfig;
+  private arrowSize: number;
 
   constructor(ctx: CanvasRenderingContext2D, cfg: RenderConfig) {
     this.ctx = ctx;
     this.cfg = cfg;
+    this.arrowSize = Math.min(cfg.laneWidth * ARROW_LANE_RATIO, MAX_ARROW_SIZE);
   }
 
-  resize(width: number, height: number, hitLineY: number): void {
-    this.cfg.canvasWidth = width;
-    this.cfg.canvasHeight = height;
-    this.cfg.hitLineY = hitLineY;
-    this.cfg.receptorY = hitLineY;
-    this.cfg.laneWidth = width / this.cfg.laneCount;
+  private laneX(lane: number): number {
+    return this.cfg.originX + lane * this.cfg.laneWidth;
+  }
+
+  private laneCenter(lane: number): number {
+    return this.laneX(lane) + this.cfg.laneWidth / 2;
+  }
+
+  private yAt(timeMs: number, elapsedMs: number): number {
+    return this.cfg.hitLineY - ((timeMs - elapsedMs) / 1000) * this.cfg.scrollSpeed;
+  }
+
+  render(state: RenderState): void {
+    const { ctx } = this;
+    const { canvasWidth: w, canvasHeight: h } = this.cfg;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#0a0a12';
+    ctx.fillRect(0, 0, w, h);
+
+    this.drawPlayfield(state.pressedLanes);
+    this.drawReceptors(state.pressedLanes);
+    this.drawHoldBodies(state);
+    this.drawHeads(state);
+    this.drawKeyLabels(state.pressedLanes);
+    this.drawJudgement(state);
+    this.drawCombo(state.combo);
   }
 
   private drawArrow(
@@ -70,328 +96,230 @@ export class GameRenderer {
     cy: number,
     size: number,
     lane: number,
-    color: string,
-    filled: boolean,
+    fill: string | null,
+    stroke: string | null,
+    lineWidth: number,
   ): void {
     const ctx = this.ctx;
-    const s = size;
     ctx.save();
     ctx.translate(cx, cy);
-
-    // Rotate based on lane: 0=Left, 1=Down, 2=Up, 3=Right
-    const rotations = [Math.PI, Math.PI / 2, -Math.PI / 2, 0];
-    ctx.rotate(rotations[lane]);
-
-    // Arrow shape pointing right (then rotated)
+    ctx.rotate(LANE_ROTATIONS[lane]);
     ctx.beginPath();
-    ctx.moveTo(s * 0.5, 0); // tip
-    ctx.lineTo(-s * 0.15, -s * 0.42);
-    ctx.lineTo(-s * 0.15, -s * 0.22);
-    ctx.lineTo(-s * 0.5, -s * 0.22);
-    ctx.lineTo(-s * 0.5, s * 0.22);
-    ctx.lineTo(-s * 0.15, s * 0.22);
-    ctx.lineTo(-s * 0.15, s * 0.42);
+    ctx.moveTo(size * 0.5, 0);
+    ctx.lineTo(size * 0.02, -size * 0.5);
+    ctx.lineTo(size * 0.02, -size * 0.22);
+    ctx.lineTo(-size * 0.5, -size * 0.22);
+    ctx.lineTo(-size * 0.5, size * 0.22);
+    ctx.lineTo(size * 0.02, size * 0.22);
+    ctx.lineTo(size * 0.02, size * 0.5);
     ctx.closePath();
-
-    if (filled) {
-      ctx.fillStyle = color;
+    if (fill) {
+      ctx.fillStyle = fill;
       ctx.fill();
     }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
-  render(state: RenderState): void {
-    const ctx = this.ctx;
-    const {
-      canvasWidth: w,
-      canvasHeight: h,
-      laneWidth: lw,
-      laneCount: lc,
-      hitLineY: hy,
-      scrollSpeed: sp,
-    } = this.cfg;
+  private drawPlayfield(pressed: ReadonlySet<number>): void {
+    const { ctx } = this;
+    const { laneWidth: lw, canvasHeight: h, hitLineY: hy, originX } = this.cfg;
+    const right = originX + 4 * lw;
 
-    ctx.clearRect(0, 0, w, h);
-
-    // Background
-    ctx.fillStyle = '#0a0a12';
-    ctx.fillRect(0, 0, w, h);
-
-    // Lane backgrounds
-    for (let i = 0; i < lc; i++) {
-      const x = i * lw;
+    for (let i = 0; i < 4; i++) {
       ctx.fillStyle = i % 2 === 0 ? '#10101c' : '#0d0d18';
-      ctx.fillRect(x, 0, lw, h);
+      ctx.fillRect(this.laneX(i), 0, lw, h);
+    }
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 4; i++) {
+      const x = this.laneX(i) + 0.5;
       ctx.moveTo(x, 0);
       ctx.lineTo(x, h);
-      ctx.stroke();
     }
-    ctx.beginPath();
-    ctx.moveTo(lc * lw, 0);
-    ctx.lineTo(lc * lw, h);
     ctx.stroke();
 
-    // Hit line — glow intensifies when any lane is pressed
-    const anyPressed = state.pressedLanes.size > 0;
-    const glowAlpha = anyPressed ? 0.28 : 0.12;
-    const glowHeight = anyPressed ? 36 : 20;
-    const grad = ctx.createLinearGradient(0, hy - glowHeight, 0, hy + glowHeight);
+    const anyPressed = pressed.size > 0;
+    const glowH = anyPressed ? 36 : 20;
+    const grad = ctx.createLinearGradient(0, hy - glowH, 0, hy + glowH);
     grad.addColorStop(0, 'rgba(255,255,255,0)');
-    grad.addColorStop(0.5, `rgba(255,255,255,${glowAlpha})`);
+    grad.addColorStop(0.5, `rgba(255,255,255,${anyPressed ? 0.22 : 0.1})`);
     grad.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, hy - glowHeight, w, glowHeight * 2);
+    ctx.fillRect(originX, hy - glowH, right - originX, glowH * 2);
 
     ctx.strokeStyle = anyPressed ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)';
     ctx.lineWidth = anyPressed ? 3 : 2;
     ctx.beginPath();
-    ctx.moveTo(0, hy);
-    ctx.lineTo(w, hy);
+    ctx.moveTo(originX, hy);
+    ctx.lineTo(right, hy);
     ctx.stroke();
 
-    // Per-lane hit line glow when pressed
-    for (let i = 0; i < lc; i++) {
-      if (!state.pressedLanes.has(i)) continue;
+    for (let i = 0; i < 4; i++) {
+      if (!pressed.has(i)) continue;
       const c = LANE_COLORS[i];
-      const lg = ctx.createLinearGradient(0, hy - 30, 0, hy + 30);
-      lg.addColorStop(0, `rgba(${c.r},${c.g},${c.b},0)`);
-      lg.addColorStop(0.5, `rgba(${c.r},${c.g},${c.b},0.25)`);
-      lg.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+      const lg = ctx.createLinearGradient(0, hy - 90, 0, hy + 90);
+      lg.addColorStop(0, rgba(c, 0));
+      lg.addColorStop(0.5, rgba(c, 0.22));
+      lg.addColorStop(1, rgba(c, 0));
       ctx.fillStyle = lg;
-      ctx.fillRect(i * lw, hy - 30, lw, 60);
+      ctx.fillRect(this.laneX(i), hy - 90, lw, 180);
     }
+  }
 
-    // Receptors (hit targets) — bigger, arrow-shaped
-    for (let i = 0; i < lc; i++) {
-      const cx = i * lw + lw / 2;
-      const pressed = state.pressedLanes.has(i);
+  private drawReceptors(pressed: ReadonlySet<number>): void {
+    const { ctx } = this;
+    const hy = this.cfg.hitLineY;
+    for (let i = 0; i < 4; i++) {
+      const cx = this.laneCenter(i);
       const c = LANE_COLORS[i];
-      const receptorSize = Math.min(lw * 0.38, 34);
-
-      if (pressed) {
-        // Filled glowing receptor
+      if (pressed.has(i)) {
+        ctx.save();
         ctx.shadowColor = c.hex;
-        ctx.shadowBlur = 20;
-        this.drawArrow(cx, hy, receptorSize, i, c.hex, true);
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = 28;
+        this.drawArrow(cx, hy, this.arrowSize, i, c.hex, '#ffffff', 3);
+        ctx.restore();
       } else {
-        // Outlined receptor
-        this.drawArrow(cx, hy, receptorSize, i, `rgba(${c.r},${c.g},${c.b},0.3)`, false);
+        this.drawArrow(cx, hy, this.arrowSize, i, rgba(c, 0.16), rgba(c, 0.85), 4);
       }
     }
+  }
 
-    // Notes — draw hold tails first (behind heads), then heads on top
-    const visibleNotes = state.notes.filter((rn) => {
-      if (rn.hit && !rn.holding) return false;
-      const n = rn.note;
-      const y = hy - ((n.timeMs - state.elapsedMs) / 1000) * sp;
-      const holdMs = n.holdMs ?? 0;
-      const tailEndY = hy - ((n.timeMs + holdMs - state.elapsedMs) / 1000) * sp;
-      return y > -60 || tailEndY > -60;
-    });
+  private drawHoldBodies(state: RenderState): void {
+    const { ctx } = this;
+    const { canvasHeight: h, hitLineY: hy } = this.cfg;
+    const margin = this.arrowSize;
+    const bodyW = this.arrowSize * 0.5;
 
-    // Pass 1: hold tails
-    for (const rn of visibleNotes) {
-      const n = rn.note;
-      const holdMs = n.holdMs ?? 0;
+    for (const n of state.notes) {
+      const holdMs = n.note.holdMs ?? 0;
       if (holdMs <= 0) continue;
-      if (rn.holdComplete) continue;
+      const failed = n.judgement === 'miss';
+      if (n.judgement !== null && !failed && !n.holding) continue;
 
-      const headY = hy - ((n.timeMs - state.elapsedMs) / 1000) * sp;
-      const tailEndY = hy - ((n.timeMs + holdMs - state.elapsedMs) / 1000) * sp;
+      const headY = this.yAt(n.note.timeMs, state.elapsedMs);
+      const tailY = this.yAt(n.note.timeMs + holdMs, state.elapsedMs);
+      const top = tailY;
+      const bottom = n.holding ? hy : headY;
+      if (bottom < -margin || top > h + margin) continue;
 
-      const lane = n.lane;
-      const cx = lane * lw + lw / 2;
-      const c = LANE_COLORS[lane];
-      const tailW = lw * HOLD_TAIL_WIDTH_RATIO;
-      const nx = cx - tailW / 2;
+      const color = failed ? MISSED_COLOR : LANE_COLORS[n.note.lane];
+      const alpha = failed ? 0.5 : 1;
+      const x = this.laneCenter(n.note.lane) - bodyW / 2;
+      const height = Math.max(0, bottom - top);
 
-      const topY = Math.min(headY, tailEndY);
-      const botY = Math.max(headY, tailEndY);
-
-      if (botY < -30 || topY > h + 30) continue;
-
-      // If actively holding, the tail shrinks from the head end
-      let drawTop = topY;
-      let drawBot = botY;
-      let alpha = 1;
-
-      if (rn.holding) {
-        // Tail is being consumed — draw from hit line up to tail end
-        drawTop = Math.min(hy, tailEndY);
-        drawBot = Math.max(hy, tailEndY);
-        alpha = 0.7;
-      } else if (rn.holdDropped) {
-        alpha = 0.15;
-      } else if (rn.missed) {
-        alpha = 0.15;
-      }
-
-      ctx.globalAlpha = alpha;
-
-      // Tail body
-      const tailGrad = ctx.createLinearGradient(nx, 0, nx + tailW, 0);
-      tailGrad.addColorStop(0, `rgba(${c.r},${c.g},${c.b},0.3)`);
-      tailGrad.addColorStop(0.5, `rgba(${c.r},${c.g},${c.b},0.5)`);
-      tailGrad.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0.3)`);
-      ctx.fillStyle = tailGrad;
+      const grad = ctx.createLinearGradient(0, top, 0, bottom);
+      grad.addColorStop(0, rgba(color, 0.3 * alpha));
+      grad.addColorStop(1, rgba(color, (n.holding ? 0.85 : 0.6) * alpha));
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.roundRect(nx, drawTop, tailW, drawBot - drawTop, 6);
+      ctx.roundRect(x, top, bodyW, height, bodyW / 2);
       ctx.fill();
 
-      // Tail outline
-      ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},0.6)`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(nx, drawTop, tailW, drawBot - drawTop, 6);
+      ctx.strokeStyle = rgba(color, 0.9 * alpha);
+      ctx.lineWidth = 2;
       ctx.stroke();
-
-      ctx.globalAlpha = 1;
     }
+  }
 
-    // Pass 2: note heads
-    for (const rn of visibleNotes) {
-      const n = rn.note;
-      const holdMs = n.holdMs ?? 0;
-      const isHold = holdMs > 0;
+  private drawHeads(state: RenderState): void {
+    const { ctx } = this;
+    const { canvasHeight: h, hitLineY: hy } = this.cfg;
+    const size = this.arrowSize;
 
-      // For holds that are being held, don't draw the head (it's consumed)
-      if (rn.holding) continue;
-      if (rn.holdComplete) continue;
+    for (const n of state.notes) {
+      const failed = n.judgement === 'miss';
+      const holding = n.holding;
+      if (!holding && n.judgement !== null && !failed) continue;
 
-      const y = hy - ((n.timeMs - state.elapsedMs) / 1000) * sp;
-      if (y < -40 || y > h + 40) continue;
+      const y = holding ? hy : this.yAt(n.note.timeMs, state.elapsedMs);
+      if (y < -size || y > h + size) continue;
 
-      const lane = n.lane;
-      const cx = lane * lw + lw / 2;
-      const c = LANE_COLORS[lane];
+      const lane = n.note.lane;
+      const color = failed ? MISSED_COLOR : LANE_COLORS[lane];
+      const cx = this.laneCenter(lane);
 
-      if (rn.missed || rn.holdDropped) {
-        ctx.globalAlpha = 0.2;
+      ctx.save();
+      ctx.globalAlpha = failed ? 0.3 : 1;
+      if (holding) {
+        ctx.shadowColor = color.hex;
+        ctx.shadowBlur = 30;
+      } else if (!failed) {
+        const dist = Math.abs(y - hy);
+        if (dist < 140) {
+          ctx.shadowColor = color.hex;
+          ctx.shadowBlur = 28 * (1 - dist / 140);
+        }
       }
+      this.drawArrow(cx, y, size, lane, color.hex, 'rgba(255,255,255,0.95)', 3);
+      ctx.restore();
 
-      const noteW = Math.min(lw * 0.8, 56);
-      const noteH = NOTE_HEIGHT;
-      const nx = cx - noteW / 2;
-      const ny = y - noteH / 2;
-
-      // Glow when near hit line
-      const dist = Math.abs(y - hy);
-      if (dist < 100 && !rn.missed) {
-        ctx.shadowColor = c.hex;
-        ctx.shadowBlur = 24 * (1 - dist / 100);
-      }
-
-      // Note body — rounded rect with gradient
-      const bodyGrad = ctx.createLinearGradient(nx, ny, nx, ny + noteH);
-      bodyGrad.addColorStop(0, `rgba(${Math.min(255, c.r + 40)},${Math.min(255, c.g + 40)},${Math.min(255, c.b + 40)},1)`);
-      bodyGrad.addColorStop(0.5, c.hex);
-      bodyGrad.addColorStop(1, `rgba(${Math.max(0, c.r - 30)},${Math.max(0, c.g - 30)},${Math.max(0, c.b - 30)},1)`);
-      ctx.fillStyle = bodyGrad;
-      ctx.beginPath();
-      ctx.roundRect(nx, ny, noteW, noteH, 8);
-      ctx.fill();
-
-      ctx.shadowBlur = 0;
-
-      // Border
-      ctx.strokeStyle = `rgba(255,255,255,0.3)`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(nx, ny, noteW, noteH, 8);
-      ctx.stroke();
-
-      // Arrow icon inside the note
-      const arrowSize = Math.min(noteH * 0.8, 22);
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 4;
-      this.drawArrow(cx, y, arrowSize, lane, '#ffffff', true);
-      ctx.shadowBlur = 0;
-
-      // For hold notes, draw a small "hold" indicator at the bottom
-      if (isHold) {
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.font = '600 9px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('HOLD', cx, ny + noteH + 8);
-      }
-
-      ctx.globalAlpha = 1;
+      if (!failed) this.drawArrow(cx, y, size * 0.45, lane, 'rgba(255,255,255,0.3)', null, 0);
     }
+  }
 
-    // Lane key labels with arrow icons
-    ctx.font = '600 13px system-ui, sans-serif';
+  private drawKeyLabels(pressed: ReadonlySet<number>): void {
+    const { ctx } = this;
+    const hy = this.cfg.hitLineY;
+    ctx.font = '700 14px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (let i = 0; i < lc; i++) {
-      const cx = i * lw + lw / 2;
-      const pressed = state.pressedLanes.has(i);
-      const c = LANE_COLORS[i];
-
-      // Arrow icon below receptor
-      const arrowSize = Math.min(lw * 0.22, 18);
-      this.drawArrow(cx, hy + 30, arrowSize, i,
-        pressed ? c.hex : 'rgba(255,255,255,0.2)',
-        pressed);
-
-      // Key letter
-      ctx.fillStyle = pressed
-        ? `rgba(${c.r},${c.g},${c.b},1)`
-        : 'rgba(255,255,255,0.2)';
-      ctx.fillText(LANE_ARROWS[i] === '◀' ? 'D' :
-        LANE_ARROWS[i] === '▼' ? 'F' :
-        LANE_ARROWS[i] === '▲' ? 'J' : 'K',
-        cx, hy + 52);
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = pressed.has(i) ? LANE_COLORS[i].hex : 'rgba(255,255,255,0.35)';
+      ctx.fillText(
+        KEY_BINDINGS[i as LaneIndex].toUpperCase(),
+        this.laneCenter(i),
+        hy + this.arrowSize / 2 + 22,
+      );
     }
+  }
 
-    // Judgement text
-    if (state.judgement) {
-      const age = performance.now() - state.judgement.at;
-      const dur = 600;
-      if (age < dur) {
-        const t = age / dur;
-        const alpha = 1 - t;
-        const yOff = -t * 20;
-        const color = JUDGE_COLORS[state.judgement.name] ?? '#fff';
-        ctx.font = `700 ${26 + (1 - t) * 10}px system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.globalAlpha = alpha;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 16;
-        ctx.fillStyle = color;
-        const text =
-          state.judgement.name === 'miss'
-            ? 'MISS'
-            : state.judgement.name.toUpperCase();
-        ctx.fillText(text, w / 2, hy - 80 + yOff);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-      }
-    }
+  private drawJudgement(state: RenderState): void {
+    if (!state.judgement) return;
+    const { ctx } = this;
+    const age = performance.now() - state.judgement.at;
+    const dur = 600;
+    if (age >= dur) return;
 
-    // Combo display
-    if (state.combo > 0) {
-      ctx.font = '700 32px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 8;
-      ctx.fillText(`${state.combo}`, w / 2, 40);
-      ctx.font = '500 12px system-ui, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillText('COMBO', w / 2, 64);
-      ctx.shadowBlur = 0;
-    }
+    const t = age / dur;
+    const color = JUDGE_COLORS[state.judgement.name];
+    const cx = this.cfg.originX + (4 * this.cfg.laneWidth) / 2;
+    const y = this.cfg.hitLineY - this.arrowSize / 2 - 40 - t * 20;
+
+    ctx.save();
+    ctx.font = `800 ${30 + (1 - t) * 8}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 1 - t;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = color;
+    ctx.fillText(JUDGEMENT_DISPLAY[state.judgement.name], cx, y);
+    ctx.restore();
+  }
+
+  private drawCombo(combo: number): void {
+    if (combo <= 0) return;
+    const { ctx } = this;
+    const cx = this.cfg.originX + (4 * this.cfg.laneWidth) / 2;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.font = '700 32px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(`${combo}`, cx, 40);
+    ctx.font = '500 12px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('COMBO', cx, 64);
+    ctx.restore();
   }
 }
