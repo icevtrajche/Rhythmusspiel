@@ -45,7 +45,19 @@
     gameState = 'playing';
   }
 
-  function handleReplays() {\n    gameState = 'replays';\n  }\n\n  function handleReplayRun(run: StoredRun) {\n    currentSongId = run.songId;\n    currentDifficulty = run.difficulty;\n    currentMods = (run.mods ?? []) as ModId[];\n    currentReplay = run.replayEvents ?? [];\n    gameState = 'playing';\n  }\n\n  function handleTutorial() {
+  function handleReplays() {
+    gameState = 'replays';
+  }
+
+  function handleReplayRun(run: StoredRun) {
+    currentSongId = run.songId;
+    currentDifficulty = run.difficulty;
+    currentMods = (run.mods ?? []) as ModId[];
+    currentReplay = run.replayEvents ?? [];
+    gameState = 'playing';
+  }
+
+  function handleTutorial() {
     gameState = 'tutorial';
   }
 
@@ -74,7 +86,9 @@
       onEnd={handleEnd}
       onQuit={handleQuit}
     />
-  {:else if gameState === 'replays'}\n    <ReplaysScreen onBack={handleMenu} onPlay={handleReplayRun} />\n  {:else if gameState === 'tutorial'}
+  {:else if gameState === 'replays'}
+    <ReplaysScreen onBack={handleMenu} onPlay={handleReplayRun} />
+  {:else if gameState === 'tutorial'}
     <TutorialScreen onBack={handleMenu} />
   {:else if gameState === 'results' && results}
     <ResultsScreen
